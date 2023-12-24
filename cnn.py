@@ -11,77 +11,81 @@ import datetime
 import lbm
 import csv
 import keras.backend as K
+from keras.callbacks import TensorBoard
 
-# Functional model
+# rotate point (x,y) around (0,0) by 90 degrees
+def rot90(x,y):
+    return -y,x
 
-def cnn_model():
-    inputs = tf.keras.Input(shape=(lbm.Ny, lbm.Nx, 4))
-    x0 = tf.keras.layers.Conv2D(4, (3, 3), activation='relu', padding='same')(inputs)
 
-    x1 = tf.keras.layers.Flatten()(x0)
-    x2 = tf.keras.layers.Dense(128, activation='relu')(x1)
-    x3 = tf.keras.layers.Dense(64, activation='relu')(x2)
-    x4 = tf.keras.layers.Dense(32, activation='relu')(x3)
-    x5 = tf.keras.layers.Dense(16, activation='relu')(x4)
-    x6 = tf.keras.layers.Dense(8, activation='relu')(x5)
-    x7 = tf.keras.layers.Dense(4, activation='relu')(x6)
-    x8 = tf.keras.layers.Dense(2, activation='relu')(x7)
-    x9 = tf.keras.layers.Dense(1, activation='relu')(x8)
-    
-    x10 = K.ones((lbm.Ny, lbm.Nx, 1))
-    x11 = tf.keras.layers.Multiply()([x9, x10])
-    outputs = K.add()([inputs, x11])
+# generator of 3x3 patches from the input image
+def gen_patches():
+    lastimg = None
+    gen = lbm.main()
+    while lbm.stillrun:
+        totalsamps = 2000
+        img = next(gen)
+        for i in np.random.permutation(lbm.Ny - 2):
+            for j in np.random.permutation(lbm.Nx - 2):
+                if lastimg is not None:
+                    x = np.array([lastimg[i:i + 3, j:j + 3, :]])
+                    Y = np.array([img[i+1:i+2, j+1:j+ 2, :3]])
+                    #yield (x,Y); print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
+                    #print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
+                    for r in range(4):
+                        yield (x+0,Y); #print(f"yielding {i},{j}: x.shape={(x+0).shape}, Y.shape={Y.shape}")
+                        x = np.rot90(x, axes=(1,2))
+                        x[0,:,0,0],y[0,0,:,0]
+                    x = np.fliplr(x)
+                    for r in range(4):
+                        yield (x+0,Y); #print(f"yielding {i},{j}: x.shape={(x+0).shape}, Y.shape={Y.shape}")
+                        x = np.rot90(x, axes=(1,2))
+                    totalsamps -= 1
+                    if totalsamps <= 0:
+                        break
+            if totalsamps <= 0:
+                break
+
+        lastimg = img
+    return
+"""
+datagen = tf.data.Dataset.from_generator(gen_patches, output_types=(tf.float32,tf.float32), output_shapes=((3, 3, 4),(3,3,4)))
+datagen = datagen.batch(1000)
+#datagen = datagen.repeat()
+"""
+
+
+# create dense model
+def dense_model():
+    inputs = tf.keras.Input(shape=(3, 3, 4))
+    x = tf.keras.layers.Flatten()(inputs)
+    x = tf.keras.layers.Dense(48, activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.02)(x)
+    #x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Dense(48, activation='relu')(x)
+    x = tf.keras.layers.Dense(12, activation='relu')(x)
+    lastlayer = tf.keras.layers.Dense(3, activation='linear')(x)
+    outputs = tf.keras.layers.Reshape((1, 1, 3))(lastlayer)
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
     return model
 
-model = cnn_model()
-model.summary()
-"""
-
-    x = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(x)
-    x = tf.keras.layers.Conv2D(4, (3, 3), activation='relu', padding='same')(x)
-    x = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(x)
-    x = tf.keras.layers.Conv2D(4, (3, 3), activation='relu')(x)
-    x = tf.keras.layers.Conv2DTranspose(4, (3, 3), activation='relu')(x)
-    x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
-    x = tf.keras.layers.Conv2DTranspose(4, (3, 3), activation='relu', padding='same')(x)
-    x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
-    x = tf.keras.layers.Conv2DTranspose(4, (3, 3), activation='relu', padding='same')(x)
-    outputs = tf.keras.layers.Reshape((lbm.Ny, lbm.Nx, 4))(x)
-    model = tf.keras.Model(inputs=inputs, outputs=outputs)
-    return model
-
-model = cnn_model()
+model = dense_model()
 model.summary()
 
-
-
-model = tf.keras.models.Sequential([
-    tf.keras.layers.Conv2D(4, (3, 3), activation='relu', input_shape=(lbm.Ny, lbm.Nx, 4),padding='same'),
-    tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-    tf.keras.layers.Conv2D(4, (3, 3), activation='relu', padding='same'),
-    tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-    tf.keras.layers.Conv2D(4, (3, 3), activation='relu'),
-    tf.keras.layers.Conv2DTranspose(4, (3, 3), activation='relu'),
-    tf.keras.layers.UpSampling2D(size=(2, 2)),
-    tf.keras.layers.Conv2DTranspose(4, (3, 3), activation='relu', padding='same'),
-    tf.keras.layers.UpSampling2D(size=(2, 2)),
-    tf.keras.layers.Conv2DTranspose(4, (3, 3), activation='relu', padding='same')])
-model.summary()
+# compile model
+model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
 
 
+# train model
+model.fit(gen_patches(), epochs=10000, steps_per_epoch=1500, callbacks=[TensorBoard(log_dir='logs')])
+now = datetime.datetime.now()
 
+year = now.year
+month = now.month
+day = now.day
+hour = now.hour
+minute = now.minute
+second = now.second
+model.save(f'model_{year}_{month:02d}_{day:02d}_{hour:02d}_{minute:02d}_{second:02d}.h5')
 
-    tf.keras.layers.Reshape((lbm.Ny, lbm.Ny, 4)),
-    tf.keras.layers.Conv2DTranspose(4, (3, 3), activation='relu'),
-
-    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-    tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-    tf.keras.layers.Dropout(0.25),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(128, activation='relu'),
-    tf.keras.layers.Dropout(0.5),
-    tf.keras.layers.Dense(10, activation='softmax')])
-
-"""
