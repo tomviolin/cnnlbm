@@ -1,0 +1,10 @@
+
+loop
+	stream
+	setinfo
+	forcing
+	collide
+	setinfo
+	limiter
+end loop
+

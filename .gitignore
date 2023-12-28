@@ -4,3 +4,4 @@ __*
 logs
 *.png
 *.h5
+venv
