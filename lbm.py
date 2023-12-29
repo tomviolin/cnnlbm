@@ -14,8 +14,8 @@ Philip Mocz (2020) Princeton Univeristy, @PMocz
 Simulate flow past cylinder
 for an isothermal fluid
 """
-NP_FLOAT_TYPE = np.float32
-NB_FLOAT_TYPE = nb.float32
+NP_FLOAT_TYPE = np.float64
+NB_FLOAT_TYPE = nb.float64
 
 BOLD='\033[33;1m'
 END='\033[0m'

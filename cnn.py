@@ -44,7 +44,7 @@ def gen_patches():
             Y = np.array([img[i+1:i+2, j+1:j+ 2,:12]])
             #yield (x,Y); print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
             #print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
-
+            #continue
             """
             # Lattice speeds / weights
             NL = 9
@@ -67,6 +67,7 @@ def gen_patches():
             fliplridx = np.array([0, 1, 8, 7, 6, 5, 4, 3, 2], dtype=np.int64)
             for r in range(4):
                 yield (x.copy(),Y.copy()) #print(f"yield {i},{j}: x.shape={(x+0).shape}, Y.shape={Y.shape}")
+                print(f"x:\n{x[...,:2]}")
                 # rotate the matrix around z axis
                 x = np.rot90(x, axes=(1,2)).copy()
                 # rotate the velocity vectors
