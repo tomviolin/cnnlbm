@@ -192,7 +192,7 @@ def main():
         uy[cylinder] = 0
 
         if it > 10:
-            yieldthing = np.array(np.stack([ux/0.1,uy/0.1,rho/rho0]+[F[:,:,k] for k in range(NL)]+[cylinder,],axis=2)).copy()
+            yieldthing = np.array(np.stack([ux,uy,rho]+[F[:,:,k] for k in range(NL)]+[cylinder,],axis=2)).copy()
             print(f"{BOLD}yieldthing: {yieldthing.shape}{END}")
             yield yieldthing
             print(f"{BOLD}yielded: {it}{END}")

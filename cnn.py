@@ -5,13 +5,14 @@
 
 import tensorflow as tf
 import numpy as np
-import os
+import os, sys
 import time
 import datetime
 import lbm
 import csv
 import keras.backend as K
 from keras.callbacks import TensorBoard
+import cv2
 
 # rotate point (x,y) around (0,0) by 90 degrees
 # rotate popuations
@@ -23,8 +24,8 @@ def gen_patches():
     for i in range(100):
         lastimg = next(gen)
     IX, IY = np.meshgrid(range(4,lbm.Nx-33), range(4,lbm.Ny-5))
-    IX = lbm.X.flatten()
-    IY = lbm.Y.flatten()
+    IX = IX.flatten()
+    IY = IY.flatten()
     #print(f"IX.shape={IX.shape}, IY.shape={IY.shape}")
 
     while lbm.stillrun:
@@ -38,10 +39,9 @@ def gen_patches():
             #print(f"ix[{k}]={ix[k]}")
             j = IX[ix[k]]
             i = IY[ix[k]]
-            if i < 0 or i >= img.shape[0] - 2 or j < 0 or j >= img.shape[1] - 2:
-                continue
-            x = np.array([lastimg[i:i + 3, j:j + 3,:]])
-            Y = np.array([img[i+1:i+2, j+1:j+ 2,:12]])
+            print(f"yielding {i},{j}")
+            x = np.array(lastimg[i  :i + 3, j  :j + 3,:])
+            Y = np.array(    img[i+1:i + 2, j+1:j + 2,:12])
             #yield (x,Y); print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
             #print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
             #continue
@@ -66,46 +66,57 @@ def gen_patches():
             #                     0  1  2  3  4  5  6  7  8
             fliplridx = np.array([0, 1, 8, 7, 6, 5, 4, 3, 2], dtype=np.int64)
             for r in range(4):
-                yield (x.copy(),Y.copy()) #print(f"yield {i},{j}: x.shape={(x+0).shape}, Y.shape={Y.shape}")
+                print(f"yield {i},{j}: x.shape={(x+0).shape}, Y.shape={Y.shape}")
+                yield (x.copy(),Y.copy()) 
                 #print(f"x:\n{x[...,:2]}")
                 # rotate the matrix around z axis
-                x = np.rot90(x, axes=(1,2)).copy()
+                x = np.rot90(x, axes=(0,1)).copy()
                 # rotate the velocity vectors
-                x[...,0],x[...,1] = -x[...,1],x[...,0]
-                Y[...,0],Y[...,1] = -Y[...,1],Y[...,0]
+                tmpx,tmpy = x[...,0].copy(),x[...,1].copy()
+                x[...,0],x[...,1] = -tmpy,tmpx
+                tmpx,tmpy = Y[...,0].copy(),Y[...,1].copy()
+                Y[...,0],Y[...,1] = -tmpy,tmpx
+
                 # move the populations to their new homes 90 degrees hence
                 # we will use the "where each popuation came from" array
                 # to figure out where each population goes to
                 popns = x[...,3:12].copy()    
-                popns[...,[1,2,3,4,5,6,7,8]] = popns[...,lbm.rot90from[1:]]
+                tmp = popns[...,1:9].copy()
+                popns[...,1:9] = tmp[...,fliplridx[1:9]-1]
                 x[...,4:12] = popns[...,1:9]
 
-                popny = Y[...,3:12].copy()    
-                popny[...,[1,2,3,4,5,6,7,8]] = popny[...,lbm.rot90from[1:]]
+
+                popny = Y[...,3:12].copy()
+                tmp = popny[...,1:9].copy()
+                popny[...,1:9] = tmp[...,fliplridx[1:9]-1]
                 Y[...,4:12] = popny[...,1:9]
 
             x = np.fliplr(x)
             x[...,0] = -x[...,0]
             Y[...,0] = -Y[...,0]
             popns = x[...,3:12].copy()
-            popns[...,1:9] = popns[...,fliplridx[1:9]]
+            popns[...,1:9] = popns[...,fliplridx[1:9]-1]
             x[...,4:12] = popns[...,1:9]
 
             popny = Y[...,3:12].copy()
-            popny[...,1:9] = popny[...,fliplridx[1:9]]
+            popny[...,1:9] = popny[...,fliplridx[1:9]-1]
             Y[...,4:12] = popny[...,1:9]
 
 
             for r in range(4):
                 yield (x.copy(),Y.copy()) #print(f"yield {i},{j}: x.shape={(x+0).shape}, Y.shape={Y.shape}")
-                x = np.rot90(x, axes=(1,2))
-                x[...,0],x[...,1] = -x[...,1],x[...,0]
+                x = np.rot90(x, axes=(0,1))
+                tmpx,tmpy = x[...,0].copy(),x[...,1].copy()
+                x[...,0],x[...,1] = -tmpy,tmpx
+                tmpx,tmpy = Y[...,0].copy(),Y[...,1].copy()
+                Y[...,0],Y[...,1] = -tmpy,tmpx
+
                 popns = x[...,3:12].copy()
-                popns[...,[1,2,3,4,5,6,7,8]] = popns[...,lbm.rot90from[1:]]
+                popns[...,[1,2,3,4,5,6,7,8]] = popns[...,lbm.rot90from[1:]-1]
                 x[...,4:12] = popns[...,1:9]
 
                 popny = Y[...,3:12].copy()    
-                popny[...,[1,2,3,4,5,6,7,8]] = popny[...,lbm.rot90from[1:]]
+                popny[...,[1,2,3,4,5,6,7,8]] = popny[...,lbm.rot90from[1:]-1]
                 Y[...,4:12] = popny[...,1:9]
         lastimg = img
     return
@@ -131,13 +142,51 @@ def dense_model():
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
     return model
 
+
+
+#def calc_macro(F, cxs, cys):
+
+genr = gen_patches()
+
+while True:
+    x,Y = next(genr)
+    ux,uy,rho = lbm.calc_macro(x[:,:,4:],lbm.cxs,lbm.cys)
+    print(x[...,0])
+    print(ux)
+    print(f"x.shape={x.shape}, Y.shape={Y.shape}")
+    fig = np.zeros((300,300),dtype=np.uint8)
+    print(f"x[1,1,2]={x[1,1,2]}")
+    for j in range(x.shape[0]):
+        for i in range(x.shape[1]):
+            for k in range(9):
+                cv2.line(fig,
+                        (
+                            int(j*100+50),
+                            int(i*100+50)
+                        ),(
+                            int(j*100+50+x[i,j,4+k]*50*lbm.cxs[k]),
+                            int(i*100+50+x[i,j,4+k]*50*lbm.cys[k])
+                            ),64,2)
+            cv2.line(fig,
+                    (
+                        j*100+50,
+                        i*100+50
+                    ),(
+                        int(j*100+50+x[i,j,0]*50),
+                        int(i*100+50+x[i,j,1]*50)
+                    ),255,2)
+    cv2.imshow('fig',fig)
+    l=cv2.waitKeyEx(0)
+    if l == 27:
+        break
+
+sys.exit(0)
+
 model = dense_model()
 model.summary()
 
 # compile model
 model.compile(optimizer='adam', loss='mse', metrics=['mae'])
-
-
 
 # train model
 model.fit(gen_patches(), epochs=10000, steps_per_epoch=1500, callbacks=[TensorBoard(log_dir='logs')])
