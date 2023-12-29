@@ -112,7 +112,7 @@ def main():
 
     cyls = np.random.random((NUM_CYLINDERS, 3)).astype(NP_FLOAT_TYPE)
     cyls[:,0] *= Nx/2  # x coordinate
-    cyls[:,1] *= Ny/20# size
+    cyls[:,1] *= Ny/17# size
     cyls[:,2] *= np.pi*2 # phase
 
     ux[cylinder] = 0

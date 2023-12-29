@@ -25,17 +25,17 @@ def gen_patches():
     IX, IY = np.meshgrid(range(4,lbm.Nx-33), range(4,lbm.Ny-5))
     IX = lbm.X.flatten()
     IY = lbm.Y.flatten()
-    print(f"IX.shape={IX.shape}, IY.shape={IY.shape}")
+    #print(f"IX.shape={IX.shape}, IY.shape={IY.shape}")
 
     while lbm.stillrun:
-        print("gen_patches: getting next image")
+        #print("gen_patches: getting next image")
         img = next(gen)
-        print(f"gen_patches: got next image; img.shape={img.shape}")
+        #print(f"gen_patches: got next image; img.shape={img.shape}")
         totalsamps = len(IX)//4
         ix = np.random.permutation(len(IX))
-        print(f"len(ix)={len(ix)}; ix[:5]={ix[:5]}")
+        #print(f"len(ix)={len(ix)}; ix[:5]={ix[:5]}")
         for k in range(totalsamps):
-            print(f"ix[{k}]={ix[k]}")
+            #print(f"ix[{k}]={ix[k]}")
             j = IX[ix[k]]
             i = IY[ix[k]]
             if i < 0 or i >= img.shape[0] - 2 or j < 0 or j >= img.shape[1] - 2:
@@ -67,7 +67,7 @@ def gen_patches():
             fliplridx = np.array([0, 1, 8, 7, 6, 5, 4, 3, 2], dtype=np.int64)
             for r in range(4):
                 yield (x.copy(),Y.copy()) #print(f"yield {i},{j}: x.shape={(x+0).shape}, Y.shape={Y.shape}")
-                print(f"x:\n{x[...,:2]}")
+                #print(f"x:\n{x[...,:2]}")
                 # rotate the matrix around z axis
                 x = np.rot90(x, axes=(1,2)).copy()
                 # rotate the velocity vectors
@@ -121,9 +121,10 @@ def dense_model():
     inputs = tf.keras.Input(shape=(3, 3, 13))
     x = tf.keras.layers.Flatten()(inputs)
     x = tf.keras.layers.Dense(48, activation='relu')(x)
-    x = tf.keras.layers.Dense(96, activation='relu')(x)
-    x = tf.keras.layers.Dense(128,activation='relu')(x)
-    x = tf.keras.layers.Dense(96, activation='relu')(x)
+    x = tf.keras.layers.Dense(48, activation='relu')(x)
+    x = tf.keras.layers.Dense(48, activation='relu')(x)
+    x = tf.keras.layers.Dense(48, activation='relu')(x)
+    x = tf.keras.layers.Dense(48, activation='relu')(x)
     x = tf.keras.layers.Dense(32, activation='relu')(x)
     lastlayer = tf.keras.layers.Dense(12, activation='linear')(x)
     outputs = tf.keras.layers.Reshape((1, 1, 12))(lastlayer)
