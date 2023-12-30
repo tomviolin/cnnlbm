@@ -39,12 +39,12 @@ def gen_patches():
             #print(f"ix[{k}]={ix[k]}")
             j = IX[ix[k]]
             i = IY[ix[k]]
-            print(f"yielding {i},{j}")
             x = np.array(lastimg[i  :i + 3, j  :j + 3,:])
             Y = np.array(    img[i+1:i + 2, j+1:j + 2,:12])
-            #yield (x,Y); print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
-            #print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
-            #continue
+            print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
+            yield (x,Y); print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
+            print(f"yielding {i},{j}: x.shape={x.shape}, Y.shape={Y.shape}")
+            continue
             """
             # Lattice speeds / weights
             NL = 9
