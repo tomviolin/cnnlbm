@@ -51,6 +51,16 @@ def gen_patches():
             idxs = np.arange(NL, dtype=np.int64)
             cxs = np.array([0, 0, 1, 1, 1, 0,-1,-1,-1], dtype=np.int64)
             cys = np.array([0, 1, 1, 0,-1,-1,-1, 0, 1], dtype=np.int64)
+
+            # above rotated 90 degrees and 270 degrees
+            cxsrot90 = -cys
+            cysrot90 = cxs
+            cxsrot270 = cys
+            cysrot270 = -cxs
+            # create mapping from where each population came from
+            # to where it goes to
+            #                     0  1  2  3  4  5  6  7  8
+
             weights = np.array([4/9,1/9,1/36,1/9,1/36,1/9,1/36,1/9,1/36]) # sums to 1
             #                     0  1  2  3  4  5  6  7  8
             rot90idxs = np.array([0, 3, 4, 5, 6, 7, 8, 1, 2], dtype=np.int64)
@@ -58,9 +68,9 @@ def gen_patches():
 
             '''
             # rot90idxs
-            6   5   4       8   7   6
-            7   0   3   =>  1   0   5
-            8   1   2       2   3   4
+            6   5   4       4   3   2      
+            7   0   3   =>  5   0   1
+            8   1   2       6   7   8
             '''
             """
             #                     0  1  2  3  4  5  6  7  8

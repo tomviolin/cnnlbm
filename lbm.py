@@ -22,8 +22,8 @@ END='\033[0m'
 """ Lattice Boltzmann Simulation """
 visc = 0.0025
 # Simulation parameters
-Nx                     = 130   # resolution x-dir
-Ny                     = 50   # resolution y-dir
+Nx                     = 20    # resolution x-dir
+Ny                     = 20   # resolution y-dir
 rho0                   = 1.0  # average density
 tau                    = visc + 0.5    # collision timescale
 Nt                     = 4000   # number of timesteps
